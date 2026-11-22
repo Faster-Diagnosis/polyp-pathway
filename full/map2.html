@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="robots" content="noindex,nofollow">
-<title>2WW Pathway: Map 2</title>
+<title>2WW Pathway: Actions</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1e3a5f">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -21,6 +21,9 @@
   label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;}
   input{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--border);background:var(--bg);color:var(--text);font:inherit;}
   input:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+  .choice{display:flex;flex-direction:column;gap:12px;margin-top:4px;}
+  .choice button{margin:0;text-align:left;padding:14px 16px;display:flex;flex-direction:column;gap:2px;}
+  .choice button span{font-weight:400;font-size:13px;opacity:.85;}
   button{width:100%;margin-top:14px;padding:11px 12px;border-radius:9px;border:1px solid var(--accent);background:var(--accent);color:var(--accent-ink);font:inherit;font-weight:600;cursor:pointer;}
   button:disabled{opacity:.6;cursor:default;}
   #msg{min-height:20px;margin:12px 0 0;font-size:13.5px;color:var(--danger);}
@@ -28,7 +31,7 @@
 </head>
 <body>
 <main>
-  <h1>2WW Pathway: Map 2 results</h1>
+  <h1>2WW Pathway</h1>
   <p>Enter the password to open the tool.</p>
   <form id="f" autocomplete="off">
     <label for="pw">Password</label>
@@ -58,6 +61,16 @@
         document.open(); document.write(html); document.close();
       });
   }
+  // After the password: open Triage directly if asked (#triage), otherwise offer the choice.
+  function route(rawKey){
+    if (location.hash === '#triage') return openWith(rawKey);
+    document.querySelector('main').innerHTML = '<h1>2WW Pathway</h1><p>Choose a tool.</p><div class="choice">'+
+      '<button type="button" id="c-tri">Triage<span>Referral through to the investigations to request (Map 1)</span></button>'+
+      '<button type="button" id="c-act">Actions<span>Manage test results: next steps and the patient letter (Map 2)</span></button></div>';
+    document.getElementById('c-tri').addEventListener('click', function(){ history.replaceState(null, '', '#triage'); openWith(rawKey); });
+    document.getElementById('c-act').addEventListener('click', function(){ location.href = 'map2.html'; });
+    return Promise.resolve();
+  }
   function unlock(password){
     return fetch('key.json', {cache:'no-store'}).then(function(r){ if(!r.ok) throw new Error('load'); return r.json(); })
       .then(function(k){
@@ -70,7 +83,7 @@
       }).then(function(rawKey){
         var bytes = new Uint8Array(rawKey);
         try { sessionStorage.setItem(SS, toB64(bytes)); } catch(e){}
-        return openWith(bytes);
+        return route(bytes);
       });
   }
 
@@ -81,7 +94,8 @@
   // Same browser tab already unlocked: reopen without asking again.
   try {
     var saved = sessionStorage.getItem(SS);
-    if (saved){ openWith(b64(saved)).catch(function(){ try{ sessionStorage.removeItem(SS); }catch(e){} }); }
+    if (saved) openWith(b64(saved)).catch(function(){ location.replace('./'); });
+    else location.replace('./');
   } catch(e){}
 
   document.getElementById('f').addEventListener('submit', function(ev){
